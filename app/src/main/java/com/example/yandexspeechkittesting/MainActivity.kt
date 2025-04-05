@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +33,7 @@ class MainActivity : ComponentActivity() {
     private var output: String? = null
     private var mediaRecorder: MediaRecorder? = null
     private var isRecording by mutableStateOf(false)
+    private val viewModel: YandexSpeechViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +50,7 @@ class MainActivity : ComponentActivity() {
                         contentAlignment = Alignment.Center
                     ) {
                         Column {
+                            Text(viewModel.answerState.value)
                             Button(
                                 onClick = {
                                     if (isRecording) {
@@ -150,6 +153,7 @@ class MainActivity : ComponentActivity() {
             // И конвертируем в нужный формат
             convertMp3ToOgg(output!!, output!!.replace("mp3", "ogg")){
                 // Здесь отправляем файл на сервер
+                viewModel.sendFileToDescribe(it)
             }
         }
     }
@@ -161,7 +165,7 @@ class MainActivity : ComponentActivity() {
  * @param inputPath путь до mp3 файла
  * @param outputPath путь куда будет сохранен .ogg
  */
-fun convertMp3ToOgg(inputPath: String, outputPath: String, onSuccess:  () -> Unit) {
+fun convertMp3ToOgg(inputPath: String, outputPath: String, onSuccess:  (outFileName: String) -> Unit) {
     /**
      * Эту строку можно взять перейдя в реализацию [FFmpegKit.executeAsync] на самом верху
      * в оригинале она выглядит так:
@@ -181,7 +185,7 @@ fun convertMp3ToOgg(inputPath: String, outputPath: String, onSuccess:  () -> Uni
          */
         if (returnCode.isValueSuccess) {
             Log.d("Converter", "Converted is successfully!")
-            onSuccess.invoke() // Вызываем заранее переданный callback
+            onSuccess.invoke(outputPath) // Вызываем заранее переданный callback
         } else {
             Log.d("Converter", "Convert error :(")
         }
